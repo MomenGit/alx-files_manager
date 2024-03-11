@@ -6,13 +6,11 @@ class DBClient {
     const dbHost = process.env.DB_PORT || 'localhost';
     const dbName = process.env.DB__DATABASE || 'files_manager';
     const uri = `mongodb://${dbHost}:${dbPort}`;
-    console.log(uri);
 
     this.client = new MongoClient(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log(this.client);
 
     this.client.connect((err) => {
       if (err) {
@@ -23,7 +21,6 @@ class DBClient {
     });
 
     this.db = this.client.db(dbName);
-    console.log(this.db);
   }
 
   isAlive() {
