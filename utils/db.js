@@ -2,11 +2,11 @@ import { MongoClient } from 'mongodb';
 
 class DBClient {
   constructor() {
-    const HOST = process.env.DB_HOST || 'localhost';
-    const PORT = process.env.DB_PORT || '27017';
-    const DATABASE = process.env.DB_DATABASE || 'files_manager';
+    const host = process.env.DB_HOST || 'localhost';
+    const port = process.env.DB_PORT || '27017';
+    const database = process.env.DB_DATABASE || 'files_manager';
 
-    const uri = `mongodb://${HOST}:${PORT}`;
+    const uri = `mongodb://${host}:${port}`;
 
     this.client = new MongoClient(uri, {
       useNewUrlParser: true,
@@ -15,7 +15,7 @@ class DBClient {
     this.client
       .connect()
       .then(() => {
-        this.db = this.client.db(DATABASE);
+        this.db = this.client.db(database);
       })
       .catch((err) => {
         console.log(err);
