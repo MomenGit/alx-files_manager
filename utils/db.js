@@ -1,13 +1,13 @@
 import { MongoClient } from 'mongodb';
 
-const HOST = process.env.DB_HOST || 'localhost';
-const PORT = process.env.DB_PORT || '27017';
-const DATABASE = process.env.DB_DATABASE || 'files_manager';
-
-const uri = `mongodb://${HOST}:${PORT}`;
-
 class DBClient {
   constructor() {
+    const HOST = process.env.DB_HOST || 'localhost';
+    const PORT = process.env.DB_PORT || '27017';
+    const DATABASE = process.env.DB_DATABASE || 'files_manager';
+
+    const uri = `mongodb://${HOST}:${PORT}`;
+
     this.client = new MongoClient(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
