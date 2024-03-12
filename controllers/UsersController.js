@@ -10,7 +10,7 @@ export async function postNew(req, res) {
   const existingUser = await usersCollection.findOne({ email });
 
   if (existingUser) {
-    return res.status(400).json({ error: 'Already exists' });
+    return res.status(400).json({ error: 'Already exist' });
   }
 
   const hashedPwd = sha1(password);
