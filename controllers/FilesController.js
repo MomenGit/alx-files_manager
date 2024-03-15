@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { ObjectID } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 import authorize from '../utils/auth';
@@ -33,12 +33,10 @@ export async function postUpload(req, res) {
     return res.status(400).json({ error: 'Missing data' });
   }
 
-  let parentFile;
-
   if (parentId) {
-    parentFile = await dbClient.db
+    const parentFile = await dbClient.db
       .collection('files')
-      .findOne({ _id: ObjectID(parentId) });
+      .findOne({ _id: ObjectId(parentId) });
 
     if (!parentFile) {
       return res.status(400).json({ error: 'Parent not found' });
@@ -48,11 +46,12 @@ export async function postUpload(req, res) {
       return res.status(400).json({ error: 'Parent is not a folder' });
     }
   }
+
   const fileData = {
-    userId: ObjectID(userId),
+    userId: ObjectId(userId),
     name,
     type,
-    parentId: ObjectID(parentId),
+    parentId: parentId ? ObjectId(parentId) : parentId,
     isPublic,
   };
 
@@ -97,7 +96,31 @@ export async function postUpload(req, res) {
 }
 
 // eslint-disable-next-line no-unused-vars, no-empty-function
-export async function getIndex(req, res) {}
+export async function getIndex(req, res) {
+  const { parentId = 0, page = 0 } = req.query;
+
+  let userId;
+  try {
+    userId = await authorize(req);
+  } catch (err) {
+    return res.status(401).json({ error: err.message });
+  }
+
+  const filesCollection = dbClient.db.collection('files');
+  const pageSize = 20;
+  const skip = page * pageSize;
+
+  const files = await filesCollection
+    .find({
+      parentId: parentId ? ObjectId(parentId) : parentId,
+      userId: ObjectId(userId),
+    })
+    .skip(skip)
+    .limit(pageSize)
+    .toArray();
+
+  return res.json(files);
+}
 export async function getShow(req, res) {
   let userId;
 
@@ -108,10 +131,11 @@ export async function getShow(req, res) {
   }
   const filesCollection = dbClient.db.collection('files');
 
-  const file = filesCollection.findOne({
-    _id: ObjectID(req.params.id),
-    userId,
+  const file = await filesCollection.findOne({
+    _id: ObjectId(req.params.id),
+    userId: ObjectId(userId),
   });
+  console.log(file);
 
   if (!file) {
     return res.status(404).json({ error: 'Not found' });
