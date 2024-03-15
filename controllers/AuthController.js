@@ -15,6 +15,10 @@ export async function getConnect(req, res) {
     'utf-8',
   );
 
+  if (!decodedCredentials.includes(':')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const [email, password] = decodedCredentials.split(':');
 
   const user = await dbClient.db
