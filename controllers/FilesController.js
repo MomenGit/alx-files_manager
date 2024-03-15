@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ObjectID } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
+import authorize from '../utils/auth';
 
 // eslint-disable-next-line import/prefer-default-export
 export async function postUpload(req, res) {
@@ -77,4 +78,28 @@ export async function postUpload(req, res) {
   };
 
   return res.status(201).json(newFile);
+}
+
+// eslint-disable-next-line no-unused-vars, no-empty-function
+export async function getIndex(req, res) {}
+export async function getShow(req, res) {
+  let userId;
+
+  try {
+    userId = await authorize(req);
+  } catch (err) {
+    return res.status(401).json({ error: err.message });
+  }
+  const filesCollection = dbClient.db.collection('files');
+
+  const file = filesCollection.findOne({
+    _id: ObjectID(req.params.id),
+    userId,
+  });
+
+  if (!file) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  return res.json(file);
 }
