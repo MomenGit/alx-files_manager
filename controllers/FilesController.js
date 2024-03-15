@@ -33,8 +33,10 @@ export async function postUpload(req, res) {
     return res.status(400).json({ error: 'Missing data' });
   }
 
+  let parentFile;
+
   if (parentId) {
-    const parentFile = dbClient.db
+    parentFile = await dbClient.db
       .collection('files')
       .findOne({ _id: ObjectID(parentId) });
 
@@ -54,11 +56,22 @@ export async function postUpload(req, res) {
     isPublic,
   };
 
-  const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
-  const filename = uuidv4();
-  const filePath = path.join(folderPath, filename);
-
+  // Writes data to file
   if (type !== 'folder') {
+    const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
+
+    if (!fs.existsSync(folderPath)) {
+      // If current directory does not exist
+      // then create it
+      try {
+        fs.mkdirSync(folderPath);
+      } catch (error2) {
+        return res.status(500).json({ error: 'Failed to save file' });
+      }
+    }
+
+    const filename = uuidv4();
+    const filePath = path.join(folderPath, filename);
     const fileBuffer = Buffer.from(data, 'base64');
 
     try {
@@ -66,9 +79,9 @@ export async function postUpload(req, res) {
     } catch (error) {
       return res.status(500).json({ error: 'Failed to save file' });
     }
-  }
 
-  fileData.localPath = filePath;
+    fileData.localPath = filePath;
+  }
 
   const opResult = await dbClient.db.collection('files').insertOne(fileData);
   const newFile = {
