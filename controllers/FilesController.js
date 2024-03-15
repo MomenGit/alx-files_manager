@@ -37,6 +37,7 @@ export async function postUpload(req, res) {
     const parentFile = dbClient.db
       .collection('files')
       .findOne({ _id: ObjectID(parentId) });
+
     if (!parentFile) {
       return res.status(400).json({ error: 'Parent not found' });
     }
@@ -53,10 +54,11 @@ export async function postUpload(req, res) {
     isPublic,
   };
 
+  const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
+  const filename = uuidv4();
+  const filePath = path.join(folderPath, filename);
+
   if (type !== 'folder') {
-    const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
-    const filename = uuidv4();
-    const filePath = path.join(folderPath, filename);
     const fileBuffer = Buffer.from(data, 'base64');
 
     try {
@@ -64,8 +66,9 @@ export async function postUpload(req, res) {
     } catch (error) {
       return res.status(500).json({ error: 'Failed to save file' });
     }
-    fileData.localPath = filePath;
   }
+
+  fileData.localPath = filePath;
 
   const opResult = await dbClient.db.collection('files').insertOne(fileData);
   const newFile = {
