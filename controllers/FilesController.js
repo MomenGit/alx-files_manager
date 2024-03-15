@@ -135,11 +135,51 @@ export async function getShow(req, res) {
     _id: ObjectId(req.params.id),
     userId: ObjectId(userId),
   });
-  console.log(file);
 
   if (!file) {
     return res.status(404).json({ error: 'Not found' });
   }
 
   return res.json(file);
+}
+
+async function publish(req, res, isPublic) {
+  let userId;
+
+  try {
+    userId = await authorize(req);
+  } catch (err) {
+    return res.status(401).json({ error: err.message });
+  }
+  const filesCollection = dbClient.db.collection('files');
+
+  const updateResult = await filesCollection.findOneAndUpdate(
+    {
+      _id: ObjectId(req.params.id),
+      userId: ObjectId(userId),
+    },
+    { $set: { isPublic } },
+  );
+
+  if (!updateResult.value) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  const file = {
+    id: updateResult.value._id,
+    userId: updateResult.value.userId,
+    name: updateResult.value.name,
+    type: updateResult.value.type,
+    isPublic,
+    parentId: updateResult.value.parentId,
+  };
+
+  return res.status(200).json(file);
+}
+export async function putPublish(req, res) {
+  return publish(req, res, true);
+}
+
+export async function putUnpublish(req, res) {
+  return publish(req, res, false);
 }
