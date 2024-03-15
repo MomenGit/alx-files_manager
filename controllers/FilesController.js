@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
+import mime from 'mime-types';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 import authorize from '../utils/auth';
@@ -182,4 +183,41 @@ export async function putPublish(req, res) {
 
 export async function putUnpublish(req, res) {
   return publish(req, res, false);
+}
+
+export async function getFile(req, res) {
+  const filesCollection = dbClient.db.collection('files');
+  const file = await filesCollection.findOne({
+    _id: ObjectId(req.params.id),
+  });
+
+  if (!file) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (!file.isPublic) {
+    let userId;
+
+    try {
+      userId = await authorize(req);
+    } catch (err) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (!userId || file.userId !== userId) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+  }
+  if (file.type === 'folder') {
+    return res.status(400).json({ error: "A folder doesn't have content" });
+  }
+  if (!fs.existsSync(file.localPath)) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  const mimeType = mime.lookup(file.name) || 'application/octet-stream';
+  const fileContent = fs.readFileSync(file.localPath, 'utf-8');
+
+  res.set('Content-Type', mimeType);
+
+  return res.send(fileContent);
 }
